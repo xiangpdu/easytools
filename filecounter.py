@@ -38,10 +38,24 @@ class Config(object):
 
 config = Config()
 
+#Exclude file, return True if need exclude this file
+def exclude(path, options):
+    if not options.has_key(config.getKey(config.OPTION_EXCLUDEFILE)):
+        return False
+    excludedirs = options[config.getKey(config.OPTION_EXCLUDEFILE)].split('|')
+    slice = path.split('/')
+    shortdir = slice[len(slice)-1]
+    for dir in excludedirs:
+        if shortdir == dir:
+            return True
+    return False
+
 #Scan specified directory recursively, and return files in this directory.
-def scanfiles(path, level, maxLevel):
+def scanfiles(path, level, maxLevel, options):
     if level == 1:
         print "scanning path: " + path
+    if level == 2 and exclude(path, options):
+        return []
     if level > maxLevel:
         return []
     files = []
@@ -49,25 +63,24 @@ def scanfiles(path, level, maxLevel):
     for file in curfiles:
         fullpath = path + "/" + file
         if os.path.isfile(fullpath):
-            files.append(fullpath)
+            if filter(file, options):
+                files.append(fullpath)
         else:
-            subfiles = scanfiles(fullpath, level+1, maxLevel)
+            subfiles = scanfiles(fullpath, level+1, maxLevel, options)
             if len(subfiles) > 0:
                 files.extend(subfiles)
     return files
 
-#filter the files that is specified format
-def filter(files, options):
-    if not options.has_key('-a'):
-        return files
-    result = []
-    value = options["-a"]
+#filter the files that is specified format, return true if pass through
+def filter(file, options):
+    if not options.has_key(config.getKey(config.OPTION_APPOINTTYPE)):
+        return True
+    value = options[config.getKey(config.OPTION_APPOINTTYPE)]
     filters = value.split("|")
-    for file in files:
-       for f in filters:
-           if file.endswith(f):
-               result.append(file)
-    return result
+    for f in filters:
+        if file.endswith(f):
+            return True
+    return False
 
 #handle count task
 def handle(path, options):
@@ -79,15 +92,14 @@ def handle(path, options):
         helper()
         exit(1)
     if options.has_key(config.getKey(config.OPTION_LEVELS)):
-        files = scanfiles(path, 1, int(options[config.getKey(config.OPTION_LEVELS)]))
+        files = scanfiles(path, 1, int(options[config.getKey(config.OPTION_LEVELS)]), options)
     else:
-        files = scanfiles(path, 1, sys.maxint)
-    results = filter(files, options)
+        files = scanfiles(path, 1, sys.maxint, options)
     
     #print results
-    for item in results:
+    for item in files:
         print item
-    print "found " + str(len(results)) + " results"
+    print "found " + str(len(files)) + " results"
 
 #Parse argv
 def parse(argv):
