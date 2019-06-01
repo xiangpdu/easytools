@@ -2,6 +2,42 @@
 import sys
 import os
 
+class Config(object):
+
+    def __init__(self):
+        # options config, (key, needparam, desc)
+        self.OPTION_APPOINTTYPE = ("-a", True, "appoint the type of files")
+        self.OPTION_EXCLUDEFILE = ("-e", True, "exclude directorys, regular expression is avliable")
+        self.OPTION_LEVELS      = ("-l", True, "the levels when scan directory recursively")
+        self.OPTION_HELP        = ("-h", False, "for help")
+
+    def getKey(self, option):
+        key, _, _ = option
+        return key
+
+    def needParam(self, option):
+        _, needParam, _ = option
+        return needParam
+
+    def getDesc(self, option):
+        _, _, desc = option
+        return desc
+
+    def hasKey(self, key):
+        for pkey, _, _ in self.getOptions():
+            if pkey == key:
+                return True
+        return False
+
+    def getOptions(self):
+        options = []
+        for name, value in vars(self).items():
+            if str(name).startswith("OPTION"):
+                options.append(value)
+        return options
+
+config = Config()
+
 #Scan specified directory recursively, and return files in this directory.
 def scanfiles(path, level, maxLevel):
     if level == 1:
@@ -39,11 +75,11 @@ def handle(path, options):
     if path == None:
         print "invalid path, please double check"
         return
-    if options.has_key("-h"):
+    if options.has_key(config.getKey(config.OPTION_HELP)):
         helper()
         exit(1)
-    if options.has_key("-l"):
-        files = scanfiles(path, 1, int(options["-l"]))
+    if options.has_key(config.getKey(config.OPTION_LEVELS)):
+        files = scanfiles(path, 1, int(options[config.getKey(config.OPTION_LEVELS)]))
     else:
         files = scanfiles(path, 1, sys.maxint)
     results = filter(files, options)
@@ -92,20 +128,15 @@ def parse(argv):
     return argv[-1], options
 
 def isOption(str):
-    #Store option configs, the second show if this option need a parameter
-    options = [("-a", True), ("-e", True), ("-l", True), ("-h", False)]
-    for option, needparam in options:
+    for option, needparam, _ in config.getOptions():
         if option == str:
             return True, needparam
     return False, needparam
 
 def helper():
-    print \
-          "usage: fct $path [options] \n"\
-          "     -a appoint the type of files\n"\
-          "     -e exclude directorys, regular expression is avliable\n"\
-          "     -l the levels when scan directory recursively\n"\
-          "     -h for help"
+    print "usage: fct $path [options]"
+    for key, _, desc in config.getOptions():
+        print "    " + key + "  " + desc
 
 if __name__ == "__main__":
     path, options = parse(sys.argv)
