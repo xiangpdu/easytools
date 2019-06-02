@@ -54,6 +54,9 @@ def exclude(path, options):
 
 #Scan specified directory recursively, and return files in this directory.
 def scanfiles(path, level, maxLevel, options):
+    if not os.path.isdir(path):
+        print path + " is not a directory!"
+        return
     if level == 1:
         print "scanning path: " + path
     if level == 2 and exclude(path, options):
