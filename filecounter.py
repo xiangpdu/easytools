@@ -1,3 +1,4 @@
+#! /usr/local/bin/python
 #This tiny tool is used to count the number of specified type file.
 import sys
 import os
